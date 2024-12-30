@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Encryption & Decryption by Diyah</title>
+  <script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f9;
+    }
+    .navbar {
+      background-color: #007bff;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+    }
+    .input-message {
+      margin: 1rem auto;
+      width: 80%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    .input-message input {
+      flex: 1;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    .input-message button {
+      padding: 0.5rem 1rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .input-message button:hover {
+      background-color: #0056b3;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin: 2rem;
+    }
+    .box {
+      padding: 0.5rem;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      height: 200px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .box h3 {
+      margin-top: 0;
+    }
+    .center {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="navbar">QR Code Encryption & Decryption by Diyah</div>
+
+  <!-- Input Message -->
+  <div class="input-message">
+    <input id="message-input" type="text" placeholder="Enter your message" />
+    <button id="encrypt-btn">Generate QR Code</button>
+  </div>
+
+  <div class="container">
+    <!-- Box 1: Generated QR Code -->
+    <div class="box">
+      <h3>Generated QR Code</h3>
+      <img id="generated-qr" src="" alt="Generated QR Code" style="width: 100%; max-height: 150px; object-fit: contain;" />
+    </div>
+
+    <!-- Box 2: Encrypted QR Code -->
+    <div class="box">
+      <h3>Encrypted QR Code</h3>
+      <img id="encrypted-qr" src="" alt="Encrypted QR Code" style="width: 100%; max-height: 150px; object-fit: contain;" />
+    </div>
+
+    <!-- Box 3: QR Upload file -->
+    <div class="box">
+      <h3>Decrypt it!</h3>
+      <input type="file" id="upload-input" accept="image/*" style="margin-bottom: 1rem;" />
+      <button id="upload-btn">Upload Picture</button>
+    </div>
+
+    <!-- Box 4: Decrypted QR Code -->
+    <div class="box">
+      <h3>Decrypted QR Code</h3>
+      <img id="decrypted-qr" src="" alt="Decrypted QR Code" style="width: 100%; max-height: 150px; object-fit: contain;" />
+    </div>
+  </div>
+
+  <script>
+document.getElementById("upload-btn").addEventListener("click", async () => {
+  const fileInput = document.getElementById("upload-input");
+  const file = fileInput.files[0];
+
+  if (!file) {
+    alert("Please select a picture to upload.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    // upload file
+    const uploadResponse = await fetch("/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    const uploadData = await uploadResponse.json();
+    if (uploadData.success) {
+      alert("File uploaded successfully!");
+
+      // dekripsi
+      const decryptResponse = await fetch("/decrypt", {
+        method: "POST",
+      });
+
+      const decryptData = await decryptResponse.json();
+      if (decryptData.success) {
+        // display hasil dekripsi
+        document.getElementById("decrypted-qr").src = `data:image/png;base64,${decryptData.dec_qr}`;
+        alert("Decryption successful!");
+      } else {
+        alert(`Decryption Error: ${decryptData.error}`);
+      }
+    } else {
+      alert(`Upload Error: ${uploadData.error}`);
+    }
+  } catch (error) {
+    console.error("Error in upload or decryption:", error);
+    alert("Failed to upload or decrypt the file.");
+  }
+});
+
+
+    document.getElementById("encrypt-btn").addEventListener("click", async () => {
+        const message = document.getElementById("message-input").value;
+        if (!message) {
+            alert("Please input a message to generate a QR code.");
+            return;
+        }
+
+        try {
+            const response = await fetch("/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+            // display generate QR asli
+            document.getElementById("generated-qr").src = `data:image/png;base64,${data.qr_code}`;
+
+            // display encrypted QR
+            document.getElementById("encrypted-qr").src = `data:image/png;base64,${data.enc_qr}`;
+
+            alert("QR code and encrypted QR code generated successfully!");
+            } else {
+            alert(`Error: ${data.error}`);
+            }
+        } catch (error) {
+            console.error("Error generating QR code:", error);
+            alert("Failed to generate QR code.");
+        }
+        });
+
+  </script>
+</body>
+</html>
